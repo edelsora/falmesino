@@ -12,6 +12,7 @@ proc asyncSocketListen() {.async.} =
     server.setSockOpt(OptReuseAddr, true)
     server.bindAddr(SERVER_PORT)
     server.listen()
+    echo "falmesino service run on: $1".format(SERVER_PORT)
   
     while true:
         let client = await server.accept()
