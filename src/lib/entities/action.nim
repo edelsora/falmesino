@@ -16,14 +16,14 @@ type
 
     # DbActionSet Description
     DaSetD* = object
-        key: string
-        value: RedisValue
-        expiry: DbExpiryD
+        key*: string
+        value*: RedisValue
+        expiry*: DbExpiryD
 
     DbActionD* = object
-        case action: DbAction
-        of daDel, daGet : key: string
-        of daSet, daSetx: desc: DaSetD
+        case action*: DbAction
+        of daDel, daGet : key*: string
+        of daSet, daSetx: desc*: DaSetD
 
 # This basicly parsing token into semantic tree.
 proc newDbActionDFromRedisValue*(protocolValue: RedisValue) : DbActionD =
