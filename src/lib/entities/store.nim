@@ -48,7 +48,7 @@ func convertArrayTypeRedisValueToSeqCacheValue(v: RedisValue) : seq[CacheValue] 
                 value.kind = ctInt
                 value.vInt = v.getInt()
 
-            if item.isString():
+            if item.isString() or item.isBulkString():
                 value.kind = ctString
                 value.vStr = v.getStr()
 
