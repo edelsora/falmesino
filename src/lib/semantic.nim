@@ -33,14 +33,18 @@ proc handleRedisProtocol*(data: string, clientPipe: AsyncSocket,table: var Cache
         of daGet:
             var getValue = table.getKey(protocolActionTree.key)
             if getValue.isSome():
+                table.lockTable()
                 var value = getValue.get()
+                table.unlockTable()
                 await clientPipe.send(encode(value))
                 return
             await clientPipe.send(encode(newRedisError("not found")))
         of daDel:discard
         of daSet:
             let desc = protocolActionTree.desc
+            table.lockTable()
             var setStatOk = table.setKey(desc.key,desc.value)
+            table.unlockTable()
             if setStatOk:
                 await clientPipe.send(encode(newRedisString("OK")))
                 return

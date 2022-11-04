@@ -3,7 +3,7 @@ import times
     , locks
     , options
     , redisparser
-    , strutils
+    , sets
 
 type
     CacheType = enum
@@ -22,7 +22,7 @@ type
     CacheTable = Table[string, CacheEntry]
 
     CacheTableLock* = object
-        cache: CacheTable
+        cache*: CacheTable
         lock*: locks.Lock
 
 func isString(v: CacheValue) : bool = return v.kind == ctString
@@ -35,7 +35,32 @@ func getStr(v: CacheValue): string = return v.vStr
 # TODO: complete cache table mecahnism
 func newCacheTableLock*(): CacheTableLock =
     result.cache = CacheTable()
+    initLock(result.lock)
 
+proc lockTable*(t: var CacheTableLock) = locks.acquire(t.lock)
+
+proc unlockTable*(t: var CacheTableLock) = locks.release(t.lock)
+
+proc mergeTable*(t: var CacheTableLock, tt: CacheTableLock) =
+    var baseKeys: seq[string] = @[] 
+    for key in t.cache.keys():
+        baseKeys.add(key)
+    
+    var foreignKeys: seq[string] = @[]
+    for key in tt.cache.keys():
+        foreignKeys.add(key)
+    let foreignKeysSet = foreignKeys.toHashSet()
+
+    let unifiedKeys = baseKeys
+        .toHashSet()
+        .union(
+            foreignKeysSet
+        )
+    t.lockTable()
+    for key in unifiedKeys:
+        if foreignKeysSet.contains(key):
+            t.cache[key] = tt.cache[key]
+    t.unlockTable()
 
 func convertArrayTypeRedisValueToSeqCacheValue(v: RedisValue) : seq[CacheValue] =
     if v.isArray():
