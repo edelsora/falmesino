@@ -23,7 +23,7 @@ type
 
     CacheTableLock* = object
         cache*: CacheTable
-        lock*: locks.Lock
+        # lock*: locks.Lock
 
 func isString(v: CacheValue) : bool = return v.kind == ctString
 func isInteger(v: CacheValue) : bool = return v.kind == ctInt
@@ -35,11 +35,11 @@ func getStr(v: CacheValue): string = return v.vStr
 # TODO: complete cache table mecahnism
 func newCacheTableLock*(): CacheTableLock =
     result.cache = CacheTable()
-    initLock(result.lock)
+    # initLock(result.lock)
 
-proc lockTable*(t: var CacheTableLock) = locks.acquire(t.lock)
+# proc lockTable*(t: var CacheTableLock) = locks.acquire(t.lock)
 
-proc unlockTable*(t: var CacheTableLock) = locks.release(t.lock)
+# proc unlockTable*(t: var CacheTableLock) = locks.release(t.lock)
 
 proc mergeTable*(t: var CacheTableLock, tt: CacheTableLock) =
     var baseKeys: seq[string] = @[] 
@@ -56,11 +56,9 @@ proc mergeTable*(t: var CacheTableLock, tt: CacheTableLock) =
         .union(
             foreignKeysSet
         )
-    t.lockTable()
     for key in unifiedKeys:
         if foreignKeysSet.contains(key):
             t.cache[key] = tt.cache[key]
-    t.unlockTable()
 
 func convertArrayTypeRedisValueToSeqCacheValue(v: RedisValue) : seq[CacheValue] =
     if v.isArray():
@@ -113,7 +111,7 @@ func convertCacheValueToRedisValue(v: CacheValue) : RedisValue =
 # TODO: make getter and setter for cache table 
 proc setKey*(t: var CacheTableLock, key: string, value: RedisValue) : bool =
     var cacheValue = CacheValue()
-    if value.isString():
+    if value.isString() or value.isBulkString():
         cacheValue.kind = ctString
         cacheValue.vStr = value.getStr()
 

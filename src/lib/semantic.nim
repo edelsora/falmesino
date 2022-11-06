@@ -21,7 +21,8 @@ func convertInlineCommandToRESPCommand(s: string) : string =
             ,  redisparser.CRLF)
     return
 
-proc handleRedisProtocol*(data: string, clientPipe: AsyncSocket,table: var CacheTableLock) {.async.}=
+proc handleRedisProtocol*(data: string, clientPipe: AsyncSocket,t: CacheTableLock): Future[CacheTableLock] {.async.}=
+    var table = t
     var cmd = data
 
     if data[0] != '*':
@@ -33,29 +34,34 @@ proc handleRedisProtocol*(data: string, clientPipe: AsyncSocket,table: var Cache
         of daGet:
             var getValue = table.getKey(protocolActionTree.key)
             if getValue.isSome():
-                table.lockTable()
+                # table.lockTable()
                 var value = getValue.get()
-                table.unlockTable()
+                # table.unlockTable()
                 await clientPipe.send(encode(value))
-                return
-            await clientPipe.send(encode(newRedisError("not found")))
+                return t
+            let errorMsg : string = encode(newRedisError("not found"))
+            await clientPipe.send(errorMsg)
         of daDel:discard
         of daSet:
             let desc = protocolActionTree.desc
-            table.lockTable()
+            # table.lockTable()
             var setStatOk = table.setKey(desc.key,desc.value)
-            table.unlockTable()
+            # table.unlockTable()
             if setStatOk:
                 await clientPipe.send(encode(newRedisString("OK")))
-                return
+                return table
             await clientPipe.send(encode(newRedisError("FAIL")))
             return
         of daSetx:discard
 
         await clientPipe.send(debugDbActionD(protocolActionTree))
     except:
+        let
+            e = getCurrentException()
+            msg = getCurrentExceptionMsg()
+        echo "Got exception ", repr(e), " with message ", msg
         await clientPipe.send(getCurrentExceptionMsg())
-    return
+    return table
 
         
 

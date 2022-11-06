@@ -37,7 +37,7 @@ proc newDbActionDFromRedisValue*(protocolValue: RedisValue) : DbActionD =
             case header.getStr():
             # GET [KEY]
             of "GET":
-                if data.len != 3:
+                if data.len != 2:
                     raise newException(TypeError, "you forget put key for GET operation, GET [key]")
 
                 var key = data[1]
