@@ -16,28 +16,32 @@ type
 
     # DbActionSet Description
     DaSetD* = object
-        key: string
-        value: RedisValue
-        expiry: DbExpiryD
+        key*: string
+        value*: RedisValue
+        expiry*: DbExpiryD
 
     DbActionD* = object
-        case action: DbAction
-        of daDel, daGet : key: string
-        of daSet, daSetx: desc: DaSetD
+        case action*: DbAction
+        of daDel, daGet : key*: string
+        of daSet, daSetx: desc*: DaSetD
 
 # This basicly parsing token into semantic tree.
 proc newDbActionDFromRedisValue*(protocolValue: RedisValue) : DbActionD =
     if protocolValue.isNil:
         raise newException(ValueError, "protocol value is nil")
+
     if protocolValue.isArray():
         var data = protocolValue.getItems()
         let header = data[0]
-        if header.isString():
+        if header.isString() or header.isBulkString():
             case header.getStr():
             # GET [KEY]
             of "GET":
+                if data.len != 2:
+                    raise newException(TypeError, "you forget put key for GET operation, GET [key]")
+
                 var key = data[1]
-                if not key.isString():
+                if not(key.isString() or key.isBulkString()):
                     raise newException(TypeError,"Invalid data type key for GET command, it should be string")
 
                 result = DbActionD(
@@ -46,8 +50,11 @@ proc newDbActionDFromRedisValue*(protocolValue: RedisValue) : DbActionD =
                 )
             # DEL [KEY]
             of "DEL":
+                if data.len != 3:
+                    raise newException(TypeError, "you forget put key for DEL operation, DEL [key]")
+
                 var key = data[1]
-                if not key.isString():
+                if not (key.isString() or key.isBulkString()):
                     raise newException(TypeError,"Invalid data type key for DEL command, it should be string")
 
                 result = DbActionD(
@@ -56,8 +63,11 @@ proc newDbActionDFromRedisValue*(protocolValue: RedisValue) : DbActionD =
                 )
             # SET [KEY] [DATA]
             of "SET":
+                if data.len != 3:
+                    raise newException(TypeError, "you forget put key or value for SET operation, SET [key] [value]")
+
                 var key = data[1]
-                if not key.isString():
+                if not (key.isString() or key.isBulkString()):
                     raise newException(TypeError,"Invalid data type key for SET command, it should be string")
 
                 result = DbActionD(
@@ -72,8 +82,11 @@ proc newDbActionDFromRedisValue*(protocolValue: RedisValue) : DbActionD =
                 )
             # SETX [KEY] [EXPIRY] [DATA]
             of "SETX":
+                if data.len != 4:
+                    raise newException(TypeError, "you forget put key, expiry second, or data for SETX operation, SETX [key]")
+
                 var key = data[1]
-                if not key.isString():
+                if not (key.isString() or key.isBulkString()):
                     raise newException(TypeError,"Invalid data type key for SETX command, it should be string")
 
                 var expiry = data[2]
