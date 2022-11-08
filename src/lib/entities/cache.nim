@@ -65,7 +65,7 @@ func convertArrayTypeRedisValueToSeqCacheValue(v: RedisValue) : seq[CacheValue] 
         var values : seq[CacheValue] = @[]
 
         for item in v.getItems():
-            var value = CacheValue()
+            var value = new(CacheValue)
 
             if item.isInteger():
                 value.kind = ctInt
@@ -110,7 +110,7 @@ func convertCacheValueToRedisValue(v: CacheValue) : RedisValue =
 
 # TODO: make getter and setter for cache table 
 proc setKey*(t: var CacheTableLock, key: string, value: RedisValue) : bool =
-    var cacheValue = CacheValue()
+    var cacheValue = new(CacheValue)
     if value.isString() or value.isBulkString():
         cacheValue.kind = ctString
         cacheValue.vStr = value.getStr()
