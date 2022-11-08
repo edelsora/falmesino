@@ -65,9 +65,19 @@ proc main() {.async.} =
         echo "[!!!] $1".format(getCurrentExceptionMsg())
         return
 
+proc loadFromDumpFile() =
+    echo "[...] load from dump file"
+    let tablesFromDumpFile = loadDumpFileToMemory("key-value-pair.falmesino")
+    if tablesFromDumpFile.isSome:
+        tables = tablesFromDumpFile.get()
+        return
+
+    echo "[!!!] dump file not found, start new database in memory"
+    tables = newCacheTableLock()
+
 when isMainModule:
     echo "[...] falmesino starting"
-    tables = newCacheTableLock()
+    loadFromDumpFile()
     proc exitHandler() {.noconv.} = 
         # TODO: make the CTRL+C Interupt to store data into filesystem with MsgPack format
         eraseScreen() #puts cursor at down
