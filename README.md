@@ -13,6 +13,9 @@ Beware of:
     - do not use var parameter to async function.
     - do not forget put discard when there an async function that return void.
 
+## Motivation
+
+I learn make a database [just for fun. No, really.](https://justforfunnoreally.dev/)
 
 ## Maintainer
 
