@@ -50,7 +50,7 @@ proc main() {.async.} =
         server.setSockOpt(OptReuseAddr, true)
         server.bindAddr(SERVER_PORT)
         server.listen()
-        echo "falmesino service run on: $1".format(SERVER_PORT)
+        echo "[***] falmesino service run on: $1, CTRL+C to stop.".format(SERVER_PORT)
 
         while true:
             var tc = acceptClient(tables,server)
@@ -62,17 +62,19 @@ proc main() {.async.} =
             tc.callback= cb
             yield tc
     except OSError:
-        echo "error"
+        echo "[!!!] $1".format(getCurrentExceptionMsg())
         return
 
 when isMainModule:
+    echo "[...] falmesino starting"
     tables = newCacheTableLock()
     proc exitHandler() {.noconv.} = 
         # TODO: make the CTRL+C Interupt to store data into filesystem with MsgPack format
         eraseScreen() #puts cursor at down
         setCursorPos(0, 0)
-        if dumpCacheToFile("falmesino.kv",tables):
-            echo "sucessfully, store to disk"
+        echo "[...] falmesino backup the current tables to filesystem...."
+        if dumpCacheToFile("key-value-pair.falmesino",tables):
+            echo "[***] sucessfully, store to disk"
             quit 0
         
         echo "failed to store to disc"
