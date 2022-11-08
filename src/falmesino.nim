@@ -4,11 +4,15 @@ import
     , asyncdispatch
     , asyncnet
     , lib/semantic
+    , lib/store
     , lib/entities/cache
     , options
-    , tables
+    , terminal
 
 const SERVER_PORT = Port(6789)
+
+var 
+    tables : CacheTableLock
 
 proc acceptClient(table: CacheTableLock, server: AsyncSocket) : Future[Option[CacheTableLock]] {.async.} =  
     var t = table
@@ -32,7 +36,6 @@ proc acceptClient(table: CacheTableLock, server: AsyncSocket) : Future[Option[Ca
     return r
 
 proc main() {.async.} =
-    var t = newCacheTableLock()
     try:
       # TODO:
       # - make accept-reply mechanism on socket.
@@ -50,11 +53,11 @@ proc main() {.async.} =
         echo "falmesino service run on: $1".format(SERVER_PORT)
 
         while true:
-            var tc = acceptClient(t,server)
+            var tc = acceptClient(tables,server)
             proc cb(f:Future[Option[CacheTableLock]]) {.gcsafe.} =
                 let fr = f.read()
                 if fr.isSome:
-                    t.mergeTable(fr.get())
+                    tables.mergeTable(fr.get())
 
             tc.callback= cb
             yield tc
@@ -63,4 +66,17 @@ proc main() {.async.} =
         return
 
 when isMainModule:
+    tables = newCacheTableLock()
+    proc exitHandler() {.noconv.} = 
+        # TODO: make the CTRL+C Interupt to store data into filesystem with MsgPack format
+        eraseScreen() #puts cursor at down
+        setCursorPos(0, 0)
+        if dumpCacheToFile("falmesino.kv",tables):
+            echo "sucessfully, store to disk"
+            quit 0
+        
+        echo "failed to store to disc"
+        quit 1
+        
+    setControlCHook(exitHandler)
     waitFor main()

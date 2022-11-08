@@ -12,4 +12,4 @@ skipDirs = @["lib/entities"]
 
 # Dependencies
 
-requires "nim >= 1.6.8","https://github.com/xmonader/nim-redisparser"
+requires "nim >= 1.6.8","https://github.com/xmonader/nim-redisparser","msgpack4nim"
