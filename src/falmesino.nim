@@ -6,10 +6,14 @@ import
     , lib/semantic
     , lib/store
     , lib/entities/cache
+    , lib/entities/packer
     , options
     , terminal
 
 const SERVER_PORT = Port(6789)
+
+# Always change VERSION when you want to release this shit
+const VERSION : Version = (0,0,1,"alpha","202211081307")
 
 var 
     tables : CacheTableLock
@@ -36,12 +40,7 @@ proc acceptClient(table: CacheTableLock, server: AsyncSocket) : Future[Option[Ca
     return r
 
 proc main() {.async.} =
-    try:
-      # TODO:
-      # - make accept-reply mechanism on socket.
-      # - parse the socket body based on RESP. 
-      # - make semantic that moving things.
-      
+    try:      
       # REF:
       # - https://xmonader.github.io/nimdays/day15_tcprouter.html
       # - https://blog.tejasjadhav.xyz/simple-chat-server-in-nim-using-sockets/
@@ -69,25 +68,25 @@ proc loadFromDumpFile() =
     echo "[...] load from dump file"
     let tablesFromDumpFile = loadDumpFileToMemory("key-value-pair.falmesino")
     if tablesFromDumpFile.isSome:
-        tables = tablesFromDumpFile.get()
+        tables = tablesFromDumpFile.get().database
         return
 
     echo "[!!!] dump file not found, start new database in memory"
     tables = newCacheTableLock()
 
 when isMainModule:
-    echo "[...] falmesino starting"
+    echo "[...] falmesino $1 starting".format(VERSION.toVersionString)
     loadFromDumpFile()
     proc exitHandler() {.noconv.} = 
         # TODO: make the CTRL+C Interupt to store data into filesystem with MsgPack format
         eraseScreen() #puts cursor at down
         setCursorPos(0, 0)
         echo "[...] falmesino backup the current tables to filesystem...."
-        if dumpCacheToFile("key-value-pair.falmesino",tables):
+        if dumpCacheToFile("key-value-pair.falmesino",newPacker(tables,VERSION)):
             echo "[***] sucessfully, store to disk"
             quit 0
         
-        echo "failed to store to disc"
+        echo "[!!!] failed to store to disc"
         quit 1
         
     setControlCHook(exitHandler)
